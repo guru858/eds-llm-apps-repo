@@ -59,6 +59,25 @@ describe('configure_vehicle handler', () => {
     expect(first.structuredContent.buildId).toBe(second.structuredContent.buildId);
   });
 
+  test('accepts labels and reads a request the model put in one field', async () => {
+    const { structuredContent: build } = await handler({
+      userIntent: 'Terra in white with the panoramic roof and the cold climate pack',
+    });
+    expect(build.selections.paint).toBe('arctic-white');
+    expect(build.selections.pack).toBe('cold-climate');
+    expect(build.selections.roof).toBe('fixed');
+    expect(build.dropped[0].rule).toBe('pano-excludes-cold-climate');
+  });
+
+  test('deep link opens the configure page with the reconciled selection', async () => {
+    const { structuredContent: build } = await handler({ roof: 'panoramic', pack: 'cold-climate' });
+    const url = new URL(build.deepLink);
+    expect(url.pathname).toBe('/configure');
+    expect(url.searchParams.get('roof')).toBe('fixed');
+    expect(url.searchParams.get('pack')).toBe('cold-climate');
+    expect(url.searchParams.get('paint')).toBe('arctic-white');
+  });
+
   test('instructs the host not to duplicate the widget in prose', async () => {
     const result = await handler({});
     expect(result._meta['openai/widgetDescription']).toMatch(/Do NOT list the options/);
